@@ -14,7 +14,10 @@
 
 import os
 import sys
-sys.path.append(os.getcwd())
+from distutils.dir_util import copy_tree, remove_tree
+cWorkDir = os.getcwd()
+copy_tree(os.path.join(cWorkDir, 'pymodules', 'its'), os.path.join(
+    cWorkDir, '..', 'its'))
 import os.path
 import tempfile
 import subprocess
@@ -212,3 +215,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    remove_tree(os.path.join(cWorkDir, '..', 'its'))

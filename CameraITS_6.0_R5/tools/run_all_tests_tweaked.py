@@ -14,7 +14,10 @@
 
 import os
 import sys
-sys.path.append(os.getcwd())
+from distutils.dir_util import copy_tree, remove_tree
+cWorkDir = os.getcwd()
+copy_tree(os.path.join(cWorkDir, 'pymodules', 'its'), os.path.join(
+    cWorkDir, '..', 'its'))
 import os.path
 import tempfile
 import subprocess
@@ -22,6 +25,7 @@ import time
 import textwrap
 import its.device
 import argparse
+
 
 def main():
     """Run all the automated tests, saving intermediate files, and producing
@@ -47,33 +51,33 @@ def main():
 
     # Not yet mandated tests
     NOT_YET_MANDATED = {
-        "scene0":[
+        "scene0": [
             "test_jitter"
         ],
-        "scene1":[
+        "scene1": [
             "test_ae_precapture_trigger",
             "test_crop_region_raw",
             "test_ev_compensation_advanced",
             "test_ev_compensation_basic",
             "test_yuv_plus_jpeg"
         ],
-        "scene2":[],
-        "scene3":[]
+        "scene2": [],
+        "scene3": []
     }
 
     # Get all the scene0 and scene1 tests, which can be run using the same
     # physical setup.
     scenes = ["scene0", "scene1", "scene2", "scene3"]
     scene_req = {
-        "scene0" : None,
-        "scene1" : "A grey card covering at least the middle 30% of the scene",
-        "scene2" : "A picture containing human faces",
-        "scene3" : "A chart containing sharp edges like ISO 12233"
+        "scene0": None,
+        "scene1": "A grey card covering at least the middle 30% of the scene",
+        "scene2": "A picture containing human faces",
+        "scene3": "A chart containing sharp edges like ISO 12233"
     }
     tests = []
     for d in scenes:
-        tests += [(d,s[:-3],os.path.join("tests", d, s))
-                  for s in os.listdir(os.path.join("tests",d))
+        tests += [(d, s[:-3], os.path.join("tests", d, s))
+                  for s in os.listdir(os.path.join("tests", d))
                   if s[-3:] == ".py"]
     tests.sort()
 
@@ -98,9 +102,9 @@ def main():
         camera_ids_path = os.path.join(topdir, "camera_ids.txt")
         out_arg = "out=" + camera_ids_path
         cmd = ['python',
-               os.path.join(os.getcwd(),"tools/get_camera_ids.py"), out_arg,
+               os.path.join(os.getcwd(), "tools/get_camera_ids.py"), out_arg,
                device_id_arg]
-        retcode = subprocess.call(cmd,cwd=topdir)
+        retcode = subprocess.call(cmd, cwd=topdir)
         assert(retcode == 0)
         with open(camera_ids_path, "r") as f:
             for line in f:
@@ -126,29 +130,29 @@ def main():
         numfail = 0
 
         prev_scene = ""
-        for (scene,testname,testpath) in tests:
-            if tname == 'all' or tname==testname:
+        for (scene, testname, testpath) in tests:
+            if tname == 'all' or tname == testname:
                 if scene != prev_scene and scene_req[scene] != None:
-                    out_path = os.path.join(topdir, camera_id, scene+".jpg")
+                    out_path = os.path.join(topdir, camera_id, scene + ".jpg")
                     out_arg = "out=" + out_path
                     scene_arg = "scene=" + scene_req[scene]
                     cmd = ['python',
-                            os.path.join(os.getcwd(),"tools/validate_scene.py"),
-                            camera_id_arg, out_arg, scene_arg, device_id_arg]
-                    retcode = subprocess.call(cmd,cwd=topdir)
+                           os.path.join(os.getcwd(), "tools/validate_scene.py"),
+                           camera_id_arg, out_arg, scene_arg, device_id_arg]
+                    retcode = subprocess.call(cmd, cwd=topdir)
                     assert(retcode == 0)
                     print "Start running tests for", scene
                 prev_scene = scene
-                cmd = ['python', os.path.join(os.getcwd(),testpath)] + \
-                      sys.argv[1:] + [camera_id_arg]
-                outdir = os.path.join(topdir,camera_id,scene)
-                outpath = os.path.join(outdir,testname+"_stdout.txt")
-                errpath = os.path.join(outdir,testname+"_stderr.txt")
+                cmd = ['python', os.path.join(os.getcwd(), testpath)] + \
+                    sys.argv[1:] + [camera_id_arg]
+                outdir = os.path.join(topdir, camera_id, scene)
+                outpath = os.path.join(outdir, testname + "_stdout.txt")
+                errpath = os.path.join(outdir, testname + "_stderr.txt")
                 t0 = time.time()
-                with open(outpath,"w") as fout, open(errpath,"w") as ferr:
-                    retcode = subprocess.call(cmd,stderr=ferr,stdout=fout,cwd=outdir)
+                with open(outpath, "w") as fout, open(errpath, "w") as ferr:
+                    retcode = subprocess.call(cmd, stderr=ferr, stdout=fout, cwd=outdir)
                 t1 = time.time()
-    
+
                 if retcode == 0:
                     retstr = "PASS "
                     numpass += 1
@@ -161,13 +165,13 @@ def main():
                 else:
                     retstr = "FAIL "
                     numfail += 1
-    
-                msg = "%s %s/%s [%.1fs]" % (retstr, scene, testname, t1-t0)
+
+                msg = "%s %s/%s [%.1fs]" % (retstr, scene, testname, t1 - t0)
                 print msg
                 summary += msg + "\n"
                 if retcode != 0 and retcode != SKIP_RET_CODE:
                     # Dump the stderr if the test fails
-                    with open (errpath, "r") as error_file:
+                    with open(errpath, "r") as error_file:
                         errors = error_file.read()
                         summary += errors + "\n"
 
@@ -177,10 +181,10 @@ def main():
             skipstr = ""
 
         test_result = "\n%d / %d tests passed (%.1f%%)%s" % (
-                numpass + numnotmandatedfail, len(tests) - numskip,
-                100.0 * float(numpass + numnotmandatedfail) / (len(tests) - numskip)
-                    if len(tests) != numskip else 100.0,
-                skipstr)
+            numpass + numnotmandatedfail, len(tests) - numskip,
+            100.0 * float(numpass + numnotmandatedfail) / (len(tests) - numskip)
+            if len(tests) != numskip else 100.0,
+            skipstr)
         print test_result
         summary += test_result + "\n"
 
@@ -200,3 +204,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    remove_tree(os.path.join(cWorkDir, '..', 'its'))
